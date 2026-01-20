@@ -14,15 +14,12 @@ class PPFFlow(StatesGroup):
     collecting_time = State()       # Когда удобно заехать
     collecting_phone = State()      # Телефон
 
-
 class ColorPPFFlow(StatesGroup):
-    """Сценарий: Цветная полиуретановая плёнка (смена цвета + защита)"""
-    choosing_zone = State()         # В круг / элементы
+    """Сценарий: Цветная полиуретановая плёнка (смена цвета + защита, только вкруг)"""
     choosing_goal = State()         # Цель (цвет/фактура + защита)
     collecting_car = State()
     collecting_time = State()
     collecting_phone = State()
-
 
 class VinylFlow(StatesGroup):
     """Сценарий: Винил / смена цвета"""
