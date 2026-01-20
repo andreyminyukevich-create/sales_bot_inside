@@ -5,9 +5,7 @@ from aiogram.fsm.storage.memory import MemoryStorage
 
 import config
 from database import init_db
-
-# Импорты handlers будем добавлять постепенно
-# from handlers import client, admin, dialog
+from handlers import client, admin
 
 
 async def main():
@@ -20,10 +18,23 @@ async def main():
     )
     logger = logging.getLogger(__name__)
     
+    # Проверка обязательных переменных
+    if not config.BOT_TOKEN:
+        logger.error("BOT_TOKEN не установлен! Проверьте переменные окружения в Railway.")
+        return
+    
+    if not config.DATABASE_URL:
+        logger.error("DATABASE_URL не установлен! Проверьте переменные окружения в Railway.")
+        return
+    
     # Инициализация базы данных
     logger.info("Инициализация базы данных...")
-    engine, SessionLocal = init_db(config.DATABASE_URL)
-    logger.info("База данных готова!")
+    try:
+        engine, SessionLocal = init_db(config.DATABASE_URL)
+        logger.info("База данных готова!")
+    except Exception as e:
+        logger.error(f"Ошибка инициализации БД: {e}")
+        return
     
     # Создание бота и диспетчера
     bot = Bot(token=config.BOT_TOKEN)
@@ -33,13 +44,13 @@ async def main():
     # Передаём SessionLocal в диспетчер (чтобы handlers могли использовать)
     dp["db_session"] = SessionLocal
     
-    # Регистрация handlers (пока закомментировано, добавим позже)
-    # from handlers import client, admin, dialog
-    # dp.include_router(client.router)
-    # dp.include_router(admin.router)
-    # dp.include_router(dialog.router)
+    # Регистрация handlers
+    dp.include_router(client.router)
+    dp.include_router(admin.router)
     
     logger.info("Бот запущен!")
+    logger.info(f"Admin chat ID: {config.ADMIN_CHAT_ID}")
+    logger.info(f"Owner chat ID: {config.OWNER_CHAT_ID}")
     
     # Запуск polling
     try:
