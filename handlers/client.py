@@ -121,6 +121,79 @@ def check_antispam(db: Session, user_id: int) -> tuple[bool, str]:
     return True, ""
 
 
+async def send_lead_card_to_admin(bot, lead: Lead, user: User):
+    """Отправить карточку лида администратору"""
+    
+    # Формируем заголовок
+    if lead.is_urgent:
+        header = "🚨 ЕДЕТ СЕЙЧАС!"
+    else:
+        header = "🆕 Новая заявка"
+    
+    # Формируем текст карточки
+    service_names = {
+        "ppf": "Оклейка плёнкой (PPF)",
+        "color_ppf": "Цветная полиуретановая плёнка",
+        "vinyl": "Винил (смена цвета)",
+        "polish": "Реставрация ЛКП",
+        "ceramic": "Керамика",
+        "wash": "Мойка",
+        "tint": "Тонировка",
+        "cleaning": "Химчистка"
+    }
+    
+    service_name = service_names.get(lead.service, lead.service or "Не указана")
+    
+    card_text = f"{header}\n\n"
+    card_text += f"👤 Клиент: {user.first_name or 'Не указано'}"
+    
+    if user.username:
+        card_text += f" (@{user.username})"
+    
+    card_text += f"\n\n📋 Услуга: {service_name}"
+    
+    if lead.service_variant:
+        card_text += f"\nВариант: {lead.service_variant}"
+    
+    # Авто
+    if lead.car_brand:
+        card_text += f"\n\n🚗 Авто: {lead.car_brand}"
+        if lead.car_model:
+            card_text += f" {lead.car_model}"
+        if lead.car_year:
+            card_text += f" ({lead.car_year} г.)"
+    
+    # Когда удобно
+    if lead.preferred_time:
+        card_text += f"\n\n⏰ Когда удобно: {lead.preferred_time}"
+    
+    # Телефон
+    if lead.phone:
+        card_text += f"\n\n📞 Телефон: {lead.phone}"
+    
+    # Цель/комментарий
+    if lead.goal:
+        card_text += f"\n\n💬 Комментарий: {lead.goal}"
+    
+    # Импортируем здесь, чтобы избежать циклического импорта
+    from keyboards import get_lead_card_buttons
+    
+    # Отправляем админу
+    await bot.send_message(
+        chat_id=config.ADMIN_CHAT_ID,
+        text=card_text,
+        reply_markup=get_lead_card_buttons(lead.id)
+    )
+    
+    # Если срочная заявка — отправляем владельцу
+    if lead.is_urgent and config.OWNER_CHAT_ID != config.ADMIN_CHAT_ID:
+        await bot.send_message(
+            chat_id=config.OWNER_CHAT_ID,
+            text=card_text,
+            reply_markup=get_lead_card_buttons(lead.id)
+        )
+
+
 # ==================== ОБРАБОТЧИК /START ====================
 
 @router.message(Command("start"))
@@ -482,7 +555,13 @@ async def finish_lead_collection(message: Message, state: FSMContext, db: Sessio
         f"Телефон: {phone}"
     )
     
-    # TODO: Отправка карточки админу (сделаем в следующем файле)
+    # Отправка карточки админу
+    if lead_id:
+        lead = db.query(Lead).filter(Lead.id == lead_id).first()
+        user = db.query(User).filter(User.user_id == message.from_user.id).first()
+        
+        if lead and user:
+            await send_lead_card_to_admin(message.bot, lead, user)
     
     # Сбрасываем состояние
     await state.clear()
