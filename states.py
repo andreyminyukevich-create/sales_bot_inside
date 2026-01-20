@@ -7,12 +7,21 @@ class MainMenu(StatesGroup):
 
 
 class PPFFlow(StatesGroup):
-    """Сценарий: Оклейка плёнкой (PPF)"""
-    choosing_variant = State()      # База / Зоны риска / В круг
+    """Сценарий: Оклейка защитной плёнкой (PPF)"""
+    choosing_variant = State()      # База / Зоны риска / В круг / Матовый полиуретан (вкруг)
     asking_zones = State()          # Для "Зоны риска" — какие именно
     collecting_car = State()        # Сбор авто (марка/модель/год)
     collecting_time = State()       # Когда удобно заехать
     collecting_phone = State()      # Телефон
+
+
+class ColorPPFFlow(StatesGroup):
+    """Сценарий: Цветная полиуретановая плёнка (смена цвета + защита)"""
+    choosing_zone = State()         # В круг / элементы
+    choosing_goal = State()         # Цель (цвет/фактура + защита)
+    collecting_car = State()
+    collecting_time = State()
+    collecting_phone = State()
 
 
 class VinylFlow(StatesGroup):
